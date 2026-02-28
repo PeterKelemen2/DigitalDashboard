@@ -95,10 +95,10 @@ class OBDService:
         return data
 
     # Untested
-    def query_all_sensors(self) -> Dict[str, dict]:
+    async def query_all_sensors(self) -> Dict[str, dict]:
         """Query all supported sensors from the OBD interface"""
         if not self.is_connected():
-            con_success = self.connect()
+            con_success = await self.connect()
             if not con_success:
                 raise Exception("Not connected to OBD interface")
 
@@ -124,9 +124,9 @@ class OBDService:
 
         return data
 
-    def query_sensors(self) -> Dict[str, dict]:
+    async def query_sensors(self) -> Dict[str, dict]:
         if not self.is_connected():
-            con_success = self.connect()
+            con_success = await self.connect()
             if not con_success:
                 raise Exception("Not connected to OBD interface")
 

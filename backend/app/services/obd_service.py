@@ -1,4 +1,7 @@
+from datetime import datetime
 import random
+from pprint import pformat
+
 import obd
 import time
 from typing import Dict, Optional, Any
@@ -7,7 +10,17 @@ import logging
 from app.core.config import settings
 from app.data.obd_sensors import ALL_PIDS
 
+log_filename = f"obd_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)  # or DEBUG if you want more detail
+
+file_handler = logging.FileHandler(log_filename)
+file_handler.setLevel(logging.INFO)
+
+formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s')
+file_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
 
 
 class OBDService:
@@ -53,6 +66,11 @@ class OBDService:
         return self.latest_data
 
     @staticmethod
+    def log_sensor_data(data: dict):
+        pretty_data = pformat(data, indent=2)
+        logger.info(f"Sensor data:\n{pretty_data}")
+
+    @staticmethod
     def query_all_sensors_dummy() -> Dict[str, dict]:
         data = {}
         for pid in ALL_PIDS:
@@ -66,6 +84,9 @@ class OBDService:
                 "value": value,
                 "unit": pid.unit
             }
+
+        OBDService.log_sensor_data(data)
+
         return data
 
     # Untested
@@ -95,6 +116,8 @@ class OBDService:
             unit = str(response.value.units) if hasattr(response.value, "units") else pid.unit
 
             data[pid.name] = {"value": value, "unit": unit}
+
+        self.log_sensor_data(data)
 
         return data
 

@@ -3,3 +3,4 @@ uvicorn
 obd
 pydantic
 pydantic-settings
+bleak

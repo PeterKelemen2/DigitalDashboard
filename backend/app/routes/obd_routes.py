@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 
 from app.core.config import settings
 from app.models.obd_data import OBDData, ConnectionStatus
+from app.services.bluetooth_service import BluetoothService
 from app.services.obd_service import obd_service
 
 router = APIRouter(prefix="/obd", tags=["OBD"])
@@ -94,3 +95,13 @@ async def stream_all_sensors():
             yield f"data: {json.dumps(sensor_data)}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.get("/get_bt_devices")
+async def get_bt_devices():
+    try:
+        bt_devices = await BluetoothService.scan_ble()
+    except Exception as e:
+        return {"error": str(e)}
+
+    return {"devices": bt_devices}

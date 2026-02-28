@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 import random
 from pprint import pformat
@@ -9,6 +10,7 @@ import logging
 
 from app.core.config import settings
 from app.data.obd_sensors import ALL_PIDS
+from app.services.bluetooth_service import BluetoothService
 
 log_filename = f"obd_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
 logger = logging.getLogger(__name__)
@@ -29,10 +31,13 @@ class OBDService:
         self.latest_data: Dict[str, Dict[str, Any]] = {}
         self.running = False
 
-    def connect(self, port: Optional[str] = settings.obd_port) -> bool:
+    async def connect(self, port: Optional[str] = settings.obd_port) -> bool:
         """Attempt to connect to OBD interface with retries"""
+
         for attempt in range(1, settings.obd_retry_count + 1):
             try:
+                bt_devices = await BluetoothService.scan_ble()
+                logger.info(f"Bluetooth devices found: {bt_devices}")
                 if port:
                     self.connection = obd.OBD(port)
                 else:

@@ -87,12 +87,17 @@ async def stream_all_sensors_dummy():
 @router.get("/stream_all_sensors")
 async def stream_all_sensors():
     async def event_generator():
-        while True:
-            await asyncio.sleep(settings.poll_interval)
+        try:
+            while True:
+                await asyncio.sleep(settings.poll_interval)
 
-            sensor_data = await obd_service.query_all_sensors()
-
-            yield f"data: {json.dumps(sensor_data)}\n\n"
+                sensor_data = await obd_service.query_all_sensors()
+                yield f"data: {json.dumps(sensor_data)}\n\n"
+        except Exception as e:
+            error_payload = {"error": str(e)}
+            yield f"data: {json.dumps(error_payload)}\n\n"
+            # Optionally break the loop so the stream ends
+            return
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 

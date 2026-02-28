@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+obd
+pydantic
+pydantic-settings

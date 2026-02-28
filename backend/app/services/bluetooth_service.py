@@ -6,7 +6,7 @@ class BluetoothService:
     @staticmethod
     async def scan_ble():
         devices = await BleakScanner.discover()
-        return [(d.name, d.address, d.details) for d in devices]  # return list of devices
+        return [(d.name, d.address) for d in devices]  # return list of devices
 
     @staticmethod
     def scan_ble_sync():

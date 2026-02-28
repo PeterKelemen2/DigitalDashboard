@@ -97,6 +97,15 @@ async def stream_all_sensors():
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
+@router.get("/connect_obd")
+async def connect_obd():
+    try:
+        obd_success = obd_service.connect()
+        return {"success": obd_success}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @router.get("/get_bt_devices")
 async def get_bt_devices():
     try:

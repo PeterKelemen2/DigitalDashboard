@@ -69,7 +69,6 @@ class OBDService:
         return data
 
     # Untested
-    @staticmethod
     def query_all_sensors(self) -> Dict[str, dict]:
         """Query all supported sensors from the OBD interface"""
         if not self.is_connected():

@@ -88,6 +88,9 @@ async def stream_all_sensors():
     async def event_generator():
         while True:
             await asyncio.sleep(settings.poll_interval)
-            yield f"data: {json.dumps(obd_service.query_all_sensors())}\n\n"
+
+            sensor_data = obd_service.query_all_sensors()
+
+            yield f"data: {json.dumps(sensor_data)}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

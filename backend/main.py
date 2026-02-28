@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.obd_routes import router as obd_router
+from app.routes.health import router as health_router
 import logging
 
 # Configure logging
@@ -26,6 +27,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(obd_router)
+app.include_router(health_router)
 
 
 @app.get("/")
@@ -46,4 +48,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

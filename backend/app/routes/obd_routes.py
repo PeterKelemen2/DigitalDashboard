@@ -1,9 +1,11 @@
 from typing import List
-from app.models.obd_data import OBDData, ConnectionStatus
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
 import json
 import asyncio
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+
+from app.core.config import settings
+from app.models.obd_data import OBDData, ConnectionStatus
 from app.services.obd_service import obd_service
 
 router = APIRouter(prefix="/obd", tags=["OBD"])
@@ -67,5 +69,25 @@ async def stream_obd_data():
             payload = json.dumps(data)
             yield f"data: {payload}\n\n"
             await asyncio.sleep(obd_service.poll_interval)
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.get("/stream_all_sensors_dummy")
+async def stream_all_sensors_dummy():
+    async def event_generator():
+        while True:
+            await asyncio.sleep(settings.poll_interval)
+            yield f"data: {json.dumps(obd_service.query_all_sensors_dummy())}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.get("/stream_all_sensors")
+async def stream_all_sensors():
+    async def event_generator():
+        while True:
+            await asyncio.sleep(settings.poll_interval)
+            yield f"data: {json.dumps(obd_service.query_all_sensors())}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

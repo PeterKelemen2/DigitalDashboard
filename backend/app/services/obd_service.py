@@ -96,32 +96,41 @@ class OBDService:
 
     # Untested
     async def query_all_sensors(self) -> Dict[str, dict]:
-        """Query all supported sensors from the OBD interface"""
+        """Query all supported sensors from the OBD interface (async-safe)."""
         if not self.is_connected():
             con_success = await self.connect()
             if not con_success:
                 raise Exception("Not connected to OBD interface")
 
+        if self.connection is None:
+            raise Exception("OBD connection is not initialized")
+
         data = {}
+
         for pid in ALL_PIDS:
-            cmd = getattr(obd.commands, pid.name, None)  # fixed
+            # Get the command from obd.commands
+            cmd = getattr(obd.commands, pid.name, None)
             if cmd is None:
+                # command not available
                 data[pid.name] = {"value": None, "unit": pid.unit}
                 continue
 
-            response = self.connection.query(cmd)
-            if response.is_null():
+            # Run the query in a thread to avoid blocking the event loop
+            response = await asyncio.to_thread(self.connection.query, cmd)
+
+            if response.is_null() or response.value is None:
                 value = None
             elif hasattr(response.value, "magnitude"):
                 value = response.value.magnitude
             else:
-                value = str(response.value) if response.value is not None else None
+                value = str(response.value)
 
+            # Determine the unit, fallback to PID unit if missing
             unit = str(response.value.units) if hasattr(response.value, "units") else pid.unit
+
             data[pid.name] = {"value": value, "unit": unit}
 
         self.log_sensor_data(data)
-
         return data
 
     async def query_sensors(self) -> Dict[str, dict]:

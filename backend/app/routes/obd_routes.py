@@ -97,6 +97,19 @@ async def stream_all_sensors():
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
+@router.get("/stream_sensors")
+async def stream_sensors():
+    async def event_generator():
+        while True:
+            await asyncio.sleep(settings.poll_interval)
+
+            sensor_data = obd_service.query_sensors()
+
+            yield f"data: {json.dumps(sensor_data)}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
 @router.get("/connect_obd")
 async def connect_obd():
     try:

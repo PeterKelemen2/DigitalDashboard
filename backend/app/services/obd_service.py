@@ -104,9 +104,8 @@ class OBDService:
 
         data = {}
         for pid in ALL_PIDS:
-            # Skip unsupported/special if you want, or handle gracefully
-            cmd = obd.commands.get(pid.name)  # get OBD command by name
-            if not cmd:
+            cmd = getattr(obd.commands, pid.name, None)  # fixed
+            if cmd is None:
                 data[pid.name] = {"value": None, "unit": pid.unit}
                 continue
 
@@ -114,15 +113,31 @@ class OBDService:
             if response.is_null():
                 value = None
             elif hasattr(response.value, "magnitude"):
-                value = response.value.magnitude  # numeric
+                value = response.value.magnitude
             else:
                 value = str(response.value) if response.value is not None else None
 
             unit = str(response.value.units) if hasattr(response.value, "units") else pid.unit
-
             data[pid.name] = {"value": value, "unit": unit}
 
         self.log_sensor_data(data)
+
+        return data
+
+    def query_sensors(self) -> Dict[str, dict]:
+        if not self.is_connected():
+            con_success = self.connect()
+            if not con_success:
+                raise Exception("Not connected to OBD interface")
+
+        if self.connection is None:
+            raise Exception("OBD connection is not initialized")
+
+        response = self.connection.query(obd.commands.RPM)
+        rpm = None if response.is_null() else response.value.magnitude  # numeric
+        unit = str(response.value.units) if hasattr(response.value, "units") else "rpm"
+
+        data = {"rpm": {"value": rpm, "unit": unit}}
 
         return data
 

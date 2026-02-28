@@ -31,29 +31,44 @@ class OBDService:
         self.latest_data: Dict[str, Dict[str, Any]] = {}
         self.running = False
 
-    async def connect(self, port: Optional[str] = settings.obd_port) -> bool:
+    async def connect(self, port: Optional[str] = None) -> bool:
         """Attempt to connect to OBD interface with retries"""
+
+        # Determine which port to use
+        obd_port = port if port else settings.connection_port
+        # Treat empty string as None
+        if not obd_port:
+            obd_port = None
+
+        if not obd_port:
+            logger.warning("No OBD port specified, attempting auto-detection")
 
         for attempt in range(1, settings.obd_retry_count + 1):
             try:
+                # Optional: Scan for Bluetooth devices to log/verify
                 bt_devices = await BluetoothService.scan_ble()
-                logger.info(f"Bluetooth devices found: {bt_devices}")
-                if port:
-                    self.connection = obd.OBD(port)
-                else:
-                    self.connection = obd.OBD()
+                logger.info(f"BLE devices nearby: {bt_devices}")
+
+                # Attempt to connect to OBD (classic Bluetooth serial)
+                self.connection = obd.OBD(
+                    portstr=obd_port,
+                    fast=settings.connection_fast,
+                    timeout=settings.connection_timeout
+                )
 
                 if self.connection.is_connected():
-                    logger.info(f"Connected to OBD on attempt {attempt}")
+                    logger.info(f"Connected to OBD on attempt {attempt} using port {obd_port}")
                     return True
                 else:
-                    logger.warning(f"Attempt {attempt}: OBD not connected")
+                    logger.warning(f"Attempt {attempt}: OBD not connected on port {obd_port}")
+
             except Exception as e:
                 logger.error(f"Attempt {attempt}: Failed to connect to OBD: {e}")
 
+            # Wait before retrying
             if attempt < settings.obd_retry_count:
-                logger.info(f"Waiting {settings.obd_retry_delay}s before retry...")
-                time.sleep(settings.obd_retry_delay)
+                logger.info(f"Retrying in {settings.obd_retry_delay}s...")
+                await asyncio.sleep(settings.obd_retry_delay)
 
         logger.error("All connection attempts failed")
         return False

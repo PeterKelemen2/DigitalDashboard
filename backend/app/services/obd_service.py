@@ -16,7 +16,7 @@ class OBDService:
         self.latest_data: Dict[str, Dict[str, Any]] = {}
         self.running = False
 
-    def connect(self, port: Optional[str] = None) -> bool:
+    def connect(self, port: Optional[str] = settings.obd_port) -> bool:
         """Attempt to connect to OBD interface with retries"""
         for attempt in range(1, settings.obd_retry_count + 1):
             try:
@@ -72,7 +72,9 @@ class OBDService:
     def query_all_sensors(self) -> Dict[str, dict]:
         """Query all supported sensors from the OBD interface"""
         if not self.is_connected():
-            raise Exception("Not connected to OBD interface")
+            con_success = self.connect()
+            if not con_success:
+                raise Exception("Not connected to OBD interface")
 
         data = {}
         for pid in ALL_PIDS:

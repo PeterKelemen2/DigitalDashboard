@@ -1,3 +1,6 @@
+import time
+import sys
+
 import obd
 from datetime import datetime
 
@@ -8,7 +11,7 @@ print(ports)
 
 log_str += f"{str(ports)}\n"
 
-conn = obd.OBD(portstr="/dev/rfcomm0", fast=True, timeout=5, protocol="1")
+conn = obd.OBD(portstr="/dev/rfcomm1", fast=True, timeout=5, protocol="1")
 
 # List of sensors to query based on your JSON
 sensors = [
@@ -105,19 +108,58 @@ sensors = [
     "FUEL_RATE"
 ]
 
-results = {}
-for sensor in sensors:
-    cmd = getattr(obd.commands, sensor, None)
-    if cmd:
-        response = conn.query(cmd)
-        results[sensor] = response.value
-    else:
-        results[sensor] = "Unsupported or unavailable"
+my_sensors = [
+    # "ELM_VOLTAGE",
+    # "STATUS",
+    # "FUEL_STATUS",
+    "ENGINE_LOAD",
+    "COOLANT_TEMP",
+    "SHORT_FUEL_TRIM_1",
+    "LONG_FUEL_TRIM_1",
+    # "SHORT_FUEL_TRIM_2",
+    # "LONG_FUEL_TRIM_2",
+    # "FUEL_PRESSURE",
+    # "INTAKE_PRESSURE",
+    "RPM",
+    "SPEED",
+    # "TIMING_ADVANCE",
+    "INTAKE_TEMP",
+    "MAF",
+    "THROTTLE_POS",
+    # "AIR_STATUS",
+]
 
-# Print all results
-for k, v in results.items():
-    log_str += f"{k}: {v}\n"
-    print(f"{k}: {v}")
+prev_time = time.time()  # store the previous loop timestamp
+
+try:
+    while True:
+        start_time = time.time()
+        results = {}
+        for sensor in my_sensors:
+            cmd = getattr(obd.commands, sensor, None)
+            if cmd:
+                response = conn.query(cmd)
+                results[sensor] = response.value
+            else:
+                results[sensor] = "Unsupported"
+
+            # Calculate actual loop time
+        elapsed = start_time - prev_time
+        prev_time = start_time
+        actual_hz = 1 / elapsed if elapsed > 0 else 0
+
+        # Print results with measured polling rate
+        print("\033[H\033[J", end="")  # clear screen
+        for k, v in results.items():
+            print(f"{k}: {v}")
+        # print(f"\nMeasured polling rate: {actual_hz:.2f} Hz")
+
+        # Wait to maintain target ~20Hz
+        # time.sleep(0.05)
+
+except KeyboardInterrupt:
+    print("Polling stopped by user")
+    conn.close()
 
 log_filename = f"obd_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
 with open(log_filename, 'w') as f:

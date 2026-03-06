@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     obd_retry_count: int = 5
     obd_retry_delay: int = 10  # seconds
     obd_port: Optional[str] = None
+    obd_protocol: Optional[str] = "1"
     poll_interval: float = 1.0
 
     connection_port: Optional[str] = None
